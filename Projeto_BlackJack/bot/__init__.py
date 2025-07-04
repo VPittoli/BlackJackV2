@@ -10,7 +10,7 @@ reglog = pickle.load(open('bot/out/reglog.pkl', 'rb'))
 reglog_count = pickle.load(open('bot/out/reglog_count.pkl', 'rb'))
 
 
-def jogar(dealer, player, count=None, regressao=False) -> str:
+def jogar(dealer, player, count=None, regressao=False, proba=False) -> str:
     '''
     Prevê as jogadas. Retorna uma das strings "pedir", "double", "split" ou "parar". 
 
@@ -19,6 +19,7 @@ def jogar(dealer, player, count=None, regressao=False) -> str:
     - player: inteiro que representa o valor somado das cartas do jogador
     - count: (opcional) inteiro que representa o valor do true count
     - regressao: usa o método de regressão linear ao invés da árvore de decisão
+    - proba: retorna as probabilidades de cada decisão ao invés da jogada prevista
     '''
 
     df = pd.DataFrame([(dealer, player)], columns=['dealer_final', 'player_final'])
@@ -39,7 +40,32 @@ def jogar(dealer, player, count=None, regressao=False) -> str:
 
     else:
         r = arvore.predict(df)
+    
+    # Probabilidades
+    if proba and regressao and count == None:
+        classes = reglog.classes_
+        probabi = reglog.predict_proba(df)[0]
+
+        probs = {}
+
+        for i in range(0, len(classes)):
+            probs[f'{classes[i]}'] = probabi[i]*100.0
+            # print(f'JOGADA: {classes[i]} {probabilidade[i]*100.0:.02f} %')
         
+        return probs
+
+    elif proba and not regressao and count == None:
+        classes = arvore.classes_
+        probabi = arvore.predict_proba(df)[0]
+
+        probs = {}
+
+        for i in range(0, len(classes)):
+            probs[f'{classes[i]}'] = probabi[i]*100.0
+            # print(f'JOGADA: {classes[i]} {probabilidade[i]*100.0:.02f} %')
+        
+        return probs
+
     match r:
         case 'H':
             return 'HIT'
