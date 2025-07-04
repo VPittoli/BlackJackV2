@@ -7,23 +7,19 @@ from MonteCarlo import simular_acoes, converter_mao_para_valores, valor_mao
 from MonteCarloTabela import simular_acao_unica
 
 
-
 class TelaInicial(QWidget):
     def __init__(self, mao_jogador, mao_dealer):
         super().__init__()
         layout = QVBoxLayout()
 
-        # Título
-        label_titulo = QLabel("<h2>Resultado dos Códigos:</h2>")
+        label_titulo = QLabel("<h2>Método/Ação Sugerida:</h2>")
         label_titulo.setTextFormat(Qt.TextFormat.RichText)
         layout.addWidget(label_titulo)
         layout.addSpacing(20)
 
-        # Preparação das mãos
         mao_jogador_valores = converter_mao_para_valores(mao_jogador)
         dealer_carta_visivel_valor = converter_mao_para_valores([mao_dealer[0]])[0]
 
-        # === Monte Carlo Tradicional ===
         resultados = simular_acoes(mao_jogador_valores, dealer_carta_visivel_valor, 500)
         pode_double = len(mao_jogador) == 2
 
@@ -40,7 +36,6 @@ class TelaInicial(QWidget):
         label_mc.setTextFormat(Qt.TextFormat.RichText)
         layout.addWidget(label_mc)
 
-        # === Monte Carlo com Tabela ===
         acao_tabela, _ = simular_acao_unica(mao_jogador_valores, dealer_carta_visivel_valor, 500)
         label_tabela = QLabel(f"<b>Tabela Matemática:</b> {acao_tabela}")
         label_tabela.setTextFormat(Qt.TextFormat.RichText)
@@ -48,7 +43,6 @@ class TelaInicial(QWidget):
 
         layout.addStretch()
         self.setLayout(layout)
-
 
 
 class Menu1(QWidget):
@@ -108,19 +102,16 @@ class Menu2(QWidget):
         label_titulo.setTextFormat(Qt.TextFormat.RichText)
         layout.addWidget(label_titulo)
 
-        # Converter cartas para valores
         mao_jogador_valores = converter_mao_para_valores(mao_jogador)
         mao_dealer_valores = converter_mao_para_valores(mao_dealer)
 
-        # Exibir soma das cartas do jogador e carta visível do dealer
-        soma_jogador = sum(mao_jogador_valores)  # soma simples, pode ajustar se quiser considerar soft hand
+        soma_jogador = sum(mao_jogador_valores)
         dealer_visivel = mao_dealer_valores[0]
 
         label_info = QLabel(f"<b>Mão do Jogador:</b> {soma_jogador} | <b>Dealer mostra:</b> {dealer_visivel}")
         label_info.setTextFormat(Qt.TextFormat.RichText)
         layout.addWidget(label_info)
 
-        # Simular ação usando Monte Carlo + tabela
         acao, resultados = simular_acao_unica(mao_jogador_valores, dealer_visivel, n=500)
 
         label_acao = QLabel(f"Ação recomendada: <b>{acao}</b>")
@@ -135,6 +126,74 @@ class Menu2(QWidget):
 
         label_derrota = QLabel(f"Derrota: {resultados['Derrota']:.2f}%")
         layout.addWidget(label_derrota)
+
+        layout.addStretch()
+        self.setLayout(layout)
+
+
+class Menu3(QWidget):
+    def __init__(self, mao_jogador, mao_dealer):
+        super().__init__()
+        layout = QVBoxLayout()
+
+        titulo = QLabel("<h2>Tabela Internet</h2>")
+        titulo.setTextFormat(Qt.TextFormat.RichText)
+        layout.addWidget(titulo)
+
+        descricao = QLabel("Aqui será exibida a recomendação baseada na tabela padrão da internet.")
+        descricao.setWordWrap(True)
+        layout.addWidget(descricao)
+
+        layout.addStretch()
+        self.setLayout(layout)
+
+
+class Menu4(QWidget):
+    def __init__(self, mao_jogador, mao_dealer):
+        super().__init__()
+        layout = QVBoxLayout()
+
+        titulo = QLabel("<h2>Árvore de Decisão</h2>")
+        titulo.setTextFormat(Qt.TextFormat.RichText)
+        layout.addWidget(titulo)
+
+        descricao = QLabel("Aqui será exibida a decisão baseada em árvore de decisão treinada.")
+        descricao.setWordWrap(True)
+        layout.addWidget(descricao)
+
+        layout.addStretch()
+        self.setLayout(layout)
+
+
+class Menu5(QWidget):
+    def __init__(self, mao_jogador, mao_dealer):
+        super().__init__()
+        layout = QVBoxLayout()
+
+        titulo = QLabel("<h2>Regressão Logística</h2>")
+        titulo.setTextFormat(Qt.TextFormat.RichText)
+        layout.addWidget(titulo)
+
+        descricao = QLabel("Aqui será exibida a sugestão com base na regressão logística.")
+        descricao.setWordWrap(True)
+        layout.addWidget(descricao)
+
+        layout.addStretch()
+        self.setLayout(layout)
+
+
+class Menu6(QWidget):
+    def __init__(self, mao_jogador, mao_dealer):
+        super().__init__()
+        layout = QVBoxLayout()
+
+        titulo = QLabel("<h2>Regressão Logística com Contagem de Cartas</h2>")
+        titulo.setTextFormat(Qt.TextFormat.RichText)
+        layout.addWidget(titulo)
+
+        descricao = QLabel("Aqui será exibida a sugestão da regressão logística considerando o true count.")
+        descricao.setWordWrap(True)
+        layout.addWidget(descricao)
 
         layout.addStretch()
         self.setLayout(layout)
@@ -157,28 +216,43 @@ class MainWindow(QMainWindow):
         botao_layout = QHBoxLayout()
         btn_inicial = QPushButton("Resultados")
         btn_menu1 = QPushButton("Monte Carlo")
-        btn_menu2 = QPushButton("Tabela + Monte Carlo") 
+        btn_menu2 = QPushButton("Tabela + Monte Carlo")
+        btn_menu3 = QPushButton("Tabela Internet")
+        btn_menu4 = QPushButton("Árvore")
+        btn_menu5 = QPushButton("Regressão Logística")
+        btn_menu6 = QPushButton("Regressão Logística com CC")
 
-        botao_layout.addWidget(btn_inicial)
-        botao_layout.addWidget(btn_menu1)
-        botao_layout.addWidget(btn_menu2)
+        for btn in [btn_inicial, btn_menu1, btn_menu2, btn_menu3, btn_menu4, btn_menu5, btn_menu6]:
+            botao_layout.addWidget(btn)
 
         self.stack = QStackedWidget()
 
         self.tela_inicial = TelaInicial(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
         self.tela_menu1 = Menu1(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
-        self.tela_menu2 = Menu2(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)  # Nova tela
+        self.tela_menu2 = Menu2(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
+        self.tela_menu3 = Menu3(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
+        self.tela_menu4 = Menu4(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
+        self.tela_menu5 = Menu5(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
+        self.tela_menu6 = Menu6(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
 
         self.stack.addWidget(self.tela_inicial)  # índice 0
         self.stack.addWidget(self.tela_menu1)    # índice 1
         self.stack.addWidget(self.tela_menu2)    # índice 2
+        self.stack.addWidget(self.tela_menu3)    # índice 3
+        self.stack.addWidget(self.tela_menu4)    # índice 4
+        self.stack.addWidget(self.tela_menu5)    # índice 5
+        self.stack.addWidget(self.tela_menu6)    # índice 6
 
         main_layout.addLayout(botao_layout)
         main_layout.addWidget(self.stack)
 
         btn_inicial.clicked.connect(lambda: self.stack.setCurrentIndex(0))
         btn_menu1.clicked.connect(lambda: self.stack.setCurrentIndex(1))
-        btn_menu2.clicked.connect(lambda: self.stack.setCurrentIndex(2))  # Conecta o botão à tela 2
+        btn_menu2.clicked.connect(lambda: self.stack.setCurrentIndex(2))
+        btn_menu3.clicked.connect(lambda: self.stack.setCurrentIndex(3))
+        btn_menu4.clicked.connect(lambda: self.stack.setCurrentIndex(4))
+        btn_menu5.clicked.connect(lambda: self.stack.setCurrentIndex(5))
+        btn_menu6.clicked.connect(lambda: self.stack.setCurrentIndex(6))
 
     def atualizar_maos(self, maos_jogador, mao_dealer, indice_mao_ativa):
         self.maos_jogador = maos_jogador
@@ -192,10 +266,18 @@ class MainWindow(QMainWindow):
 
         self.tela_inicial = TelaInicial(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
         self.tela_menu1 = Menu1(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
-        self.tela_menu2 = Menu2(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)  # Atualiza a nova tela
+        self.tela_menu2 = Menu2(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
+        self.tela_menu3 = Menu3(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
+        self.tela_menu4 = Menu4(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
+        self.tela_menu5 = Menu5(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
+        self.tela_menu6 = Menu6(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
 
         self.stack.addWidget(self.tela_inicial)  # índice 0
         self.stack.addWidget(self.tela_menu1)    # índice 1
         self.stack.addWidget(self.tela_menu2)    # índice 2
+        self.stack.addWidget(self.tela_menu3)    # índice 3
+        self.stack.addWidget(self.tela_menu4)    # índice 4
+        self.stack.addWidget(self.tela_menu5)    # índice 5
+        self.stack.addWidget(self.tela_menu6)    # índice 6
 
         self.stack.setCurrentIndex(0)

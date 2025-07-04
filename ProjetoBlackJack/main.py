@@ -38,6 +38,7 @@ class BlackjackWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Blackjack Simulator")
+        self.apostas_maos = []
 
         pixmap_mesa = QPixmap("mesa.png")
         self.bg_label = QLabel(self)
@@ -130,6 +131,7 @@ class BlackjackWindow(QWidget):
         self.mao_ativa_terminada = False
         self.carta_revelada = False
         self.jogador_estourou = []
+        self.apostas_maos = [self.aposta]
 
         self.menu = None  # Janela do menu de dicas
 
@@ -168,7 +170,7 @@ class BlackjackWindow(QWidget):
         self.animar_fichas(self.fichas)
 
     def nova_partida(self):
-        # Reembaralhar deck se precisar
+    # Reembaralhar deck se precisar
         if len(self.deck) < 52 * 2:
             self.deck = [v + n for v in valores for n in naipes] * 8
             random.shuffle(self.deck)
@@ -187,9 +189,10 @@ class BlackjackWindow(QWidget):
         self.label_ganho.setStyleSheet(
             "color: red; font-size: 14px; font-weight: bold; background-color: rgba(0,0,0,0.6); padding: 3px; border-radius: 5px;")
         self.label_ganho.setText(f"-{self.aposta}")
-        QTimer.singleShot(2000, lambda: self.label_ganho.setText(""))
+        QTimer.singleShot(5000, lambda: self.label_ganho.setText(""))
 
         self.maos = [[self.deck.pop(), self.deck.pop()]]
+        self.apostas_maos = [self.aposta]  # <-- CORREÇÃO: reinicia a lista de apostas corretamente aqui
         self.jogador_estourou = [False]
         self.mao_dealer = [self.deck.pop(), self.deck.pop()]
         self.mao_ativa_idx = 0
@@ -314,6 +317,7 @@ class BlackjackWindow(QWidget):
             self.menu.atualizar_maos(self.maos, self.mao_dealer, self.mao_ativa_idx)
 
         valor_mao = calcular_valor(self.maos[self.mao_ativa_idx])
+        
         if valor_mao > 21:
             self.label_resultado.setText(f"Mão {self.mao_ativa_idx + 1} estourou!")
             self.mao_ativa_terminada = True
@@ -324,8 +328,18 @@ class BlackjackWindow(QWidget):
             self.btn_double.setEnabled(False)
             self.proxima_mao()
             return
+        elif valor_mao == 21:
+            self.label_resultado.setText(f"Mão {self.mao_ativa_idx + 1} tem 21!")
+            self.mao_ativa_terminada = True
+            self.btn_pedir.setEnabled(False)
+            self.btn_parar.setEnabled(False)
+            self.btn_split.setEnabled(False)
+            self.btn_double.setEnabled(False)
+            self.proxima_mao()
+            return
         else:
             self.label_resultado.setText("")
+
         self.btn_split.setEnabled(self.pode_split())
         self.btn_double.setEnabled(True)
 
@@ -338,20 +352,28 @@ class BlackjackWindow(QWidget):
         mao_atual = self.maos[self.mao_ativa_idx]
         carta1 = mao_atual[0]
         carta2 = mao_atual[1]
+        self.apostas_maos[self.mao_ativa_idx] = self.aposta
+        self.apostas_maos.insert(self.mao_ativa_idx + 1, self.aposta)
 
         if not self.deck:
             self.reembaralhar_deck()
 
+        # Atualizar a mão dividida
         self.maos[self.mao_ativa_idx] = [carta1, self.deck.pop()]
-        self.maos.append([carta2, self.deck.pop()])
-        self.jogador_estourou.append(False)
+        nova_mao = [carta2, self.deck.pop()]
+        self.maos.insert(self.mao_ativa_idx + 1, nova_mao)
+
+        # Inserir False para ambas
+        self.jogador_estourou[self.mao_ativa_idx] = False
+        self.jogador_estourou.insert(self.mao_ativa_idx + 1, False)
 
         self.mostrar_maos()
         self.btn_split.setEnabled(False)
-        self.btn_double.setEnabled(False)
+        self.btn_double.setEnabled(True)  # Habilitar double para nova mão se necessário
 
         if self.menu and self.menu.isVisible():
             self.menu.atualizar_maos(self.maos, self.mao_dealer, self.mao_ativa_idx)
+
 
     def fazer_double(self):
         if self.mao_ativa_terminada:
@@ -360,10 +382,22 @@ class BlackjackWindow(QWidget):
         if len(self.maos[self.mao_ativa_idx]) != 2:
             return
 
+        if self.fichas < self.aposta:
+            self.label_resultado.setText("Fichas insuficientes para Double.")
+            return
+
+        self.fichas -= self.aposta
+        self.atualizar_label_fichas()
+        self.label_ganho.setStyleSheet("color: red; font-size: 14px; font-weight: bold; background-color: rgba(0,0,0,0.6); padding: 3px; border-radius: 5px;")
+        self.label_ganho.setText(f"-{self.aposta}")
+        QTimer.singleShot(5000, lambda: self.label_ganho.setText(""))
+
         if not self.deck:
             self.reembaralhar_deck()
 
         self.maos[self.mao_ativa_idx].append(self.deck.pop())
+        self.apostas_maos[self.mao_ativa_idx] += self.aposta  # dobra aposta
+
         self.mostrar_maos()
         self.atualizar_label_deck()
 
@@ -411,6 +445,11 @@ class BlackjackWindow(QWidget):
             self.jogada_dealer()
 
     def jogada_dealer(self):
+        if all(self.jogador_estourou):
+            self.label_resultado.setText("Todas as mãos estouraram. Dealer não precisa jogar.")
+            self.btn_nova.setEnabled(True)
+            return
+
         self.carta_revelada = True
         self.mostrar_cartas(self.mao_dealer, self.container_dealer, hide_second=False)
         valor_dealer = calcular_valor(self.mao_dealer)
@@ -438,23 +477,25 @@ class BlackjackWindow(QWidget):
             jogador_blackjack = is_blackjack(mao)
             if self.jogador_estourou[idx]:
                 textos.append(f"Mão {idx+1}: Perdeu (estourou)")
-            elif jogador_blackjack and not dealer_blackjack:
-                # Blackjack paga 3:2
-                ganho = int(self.aposta * 2.5)  # apostou 1x e ganha 1.5x + a aposta = 2.5x total
+            elif jogador_blackjack and dealer_blackjack:
+                ganhos += self.apostas_maos[idx]
+                textos.append(f"Mão {idx+1}: Empate (ambos Blackjack)")
+            elif jogador_blackjack:
+                ganho = int(self.apostas_maos[idx] * 2.5)
                 ganhos += ganho
                 textos.append(f"Mão {idx+1}: Blackjack! Ganhou {ganho}")
-            elif dealer_blackjack and not jogador_blackjack:
+            elif dealer_blackjack:
                 textos.append(f"Mão {idx+1}: Perdeu (dealer blackjack)")
             elif valor_dealer > 21:
-                ganho = self.aposta * 2
+                ganho = self.apostas_maos[idx] * 2
                 ganhos += ganho
                 textos.append(f"Mão {idx+1}: Ganhou {ganho} (dealer estourou)")
             elif valor_jog > valor_dealer:
-                ganho = self.aposta * 2
+                ganho = self.apostas_maos[idx] * 2
                 ganhos += ganho
                 textos.append(f"Mão {idx+1}: Ganhou {ganho}")
             elif valor_jog == valor_dealer:
-                ganhos += self.aposta
+                ganhos += self.apostas_maos[idx]
                 textos.append(f"Mão {idx+1}: Empate")
             else:
                 textos.append(f"Mão {idx+1}: Perdeu")
@@ -468,7 +509,7 @@ class BlackjackWindow(QWidget):
             self.label_ganho.setStyleSheet(
                 "color: lime; font-size: 14px; font-weight: bold; background-color: rgba(0,0,0,0.6); padding: 3px; border-radius: 5px;")
             self.label_ganho.setText(f"+{ganhos}")
-            QTimer.singleShot(2000, lambda: self.label_ganho.setText(""))
+            QTimer.singleShot(5000, lambda: self.label_ganho.setText(""))
 
 
     def reembaralhar_deck(self):
