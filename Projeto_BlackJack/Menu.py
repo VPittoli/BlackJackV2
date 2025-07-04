@@ -42,12 +42,18 @@ class TelaInicial(QWidget):
         label_tabela.setTextFormat(Qt.TextFormat.RichText)
         layout.addWidget(label_tabela)
 
-        acao_tabela_internet = bot.jogar_tabela(dealer_carta_visivel_valor, valor_mao(mao_jogador_valores))
+        ace = 1 in mao_jogador_valores or 11 in mao_jogador_valores
+        dupla = False
+        for n in mao_jogador_valores:
+            if mao_jogador_valores.count(n) > 1:
+                dupla = True
+
+        acao_tabela_internet = bot.jogar_tabela(dealer=dealer_carta_visivel_valor, player=valor_mao(mao_jogador_valores), ace=ace, dupla=dupla)
         label_tabela_internet = QLabel(f'<b>Tabela da Internet:</b> {acao_tabela_internet}')
         label_tabela_internet.setTextFormat(Qt.TextFormat.RichText)
         layout.addWidget(label_tabela_internet)
 
-        acao_arvore = bot.jogar(dealer_carta_visivel_valor, valor_mao(mao_jogador_valores))
+        acao_arvore = bot.jogar(dealer=dealer_carta_visivel_valor, player=valor_mao(mao_jogador_valores))
         label_arvore = QLabel(f'<b>Arvore de Decisão:</b> {acao_arvore}')
         label_arvore.setTextFormat(Qt.TextFormat.RichText)
         layout.addWidget(label_arvore)
@@ -156,9 +162,30 @@ class Menu3(QWidget):
         titulo.setTextFormat(Qt.TextFormat.RichText)
         layout.addWidget(titulo)
 
-        descricao = QLabel("Aqui será exibida a recomendação baseada na tabela padrão da internet.")
-        descricao.setWordWrap(True)
-        layout.addWidget(descricao)
+        mao_jogador_valores = converter_mao_para_valores(mao_jogador)
+        dealer_val = converter_mao_para_valores(mao_dealer)[0]
+
+        ace = 1 in mao_jogador_valores or 11 in mao_jogador_valores
+        dupla = False
+        for n in mao_jogador_valores:
+            if mao_jogador_valores.count(n) > 1:
+                dupla = True
+
+        soma_jogador = valor_mao(mao_jogador_valores)
+
+        label_info = QLabel(f"<b>Mão do Jogador:</b> {soma_jogador} | <b>Dealer mostra:</b> {dealer_val}")
+        label_info.setTextFormat(Qt.TextFormat.RichText)
+        layout.addWidget(label_info)
+
+        label_dados = QLabel(f"<b>É soft?</b> {'Sim' if ace else 'Não'} | <b>É um par?</b> {'Sim' if dupla else 'Não'}")
+        label_dados.setTextFormat(Qt.TextFormat.RichText)
+        layout.addWidget(label_dados)
+
+        acao = bot.jogar_tabela(dealer_val, soma_jogador, ace, dupla)
+
+        label_acao = QLabel(f"Ação recomendada: <b>{acao}</b>")
+        label_acao.setTextFormat(Qt.TextFormat.RichText)
+        layout.addWidget(label_acao)
 
         layout.addStretch()
         self.setLayout(layout)
@@ -173,9 +200,42 @@ class Menu4(QWidget):
         titulo.setTextFormat(Qt.TextFormat.RichText)
         layout.addWidget(titulo)
 
-        descricao = QLabel("Aqui será exibida a decisão baseada em árvore de decisão treinada.")
-        descricao.setWordWrap(True)
-        layout.addWidget(descricao)
+        mao_jogador_valores = converter_mao_para_valores(mao_jogador)
+        dealer_val = converter_mao_para_valores(mao_dealer)[0]
+
+        soma_jogador = valor_mao(mao_jogador_valores)
+
+        label_info = QLabel(f"<b>Mão do Jogador:</b> {soma_jogador} | <b>Dealer mostra:</b> {dealer_val}")
+        label_info.setTextFormat(Qt.TextFormat.RichText)
+        layout.addWidget(label_info)
+
+        acao = bot.jogar(dealer_val, soma_jogador)
+
+        label_acao = QLabel(f"Ação recomendada: <b>{acao}</b>")
+        label_acao.setTextFormat(Qt.TextFormat.RichText)
+        layout.addWidget(label_acao)
+
+        probabilidades = bot.jogar(dealer_val, soma_jogador, proba=True)
+
+        for p in probabilidades:
+            t = ''
+            
+            match p:
+                case 'H':
+                    t += 'HIT'
+
+                case 'D':
+                    t += 'DOUBLE'
+                    
+                case 'P':
+                    t += 'SPLIT'
+                    
+                case 'S':
+                    t += 'STAND'
+
+            l = QLabel(f"<br><b>Ação</b>: {t}<b><br> {float(probabilidades[p]):.02f} %")
+            l.setTextFormat(Qt.TextFormat.RichText)
+            layout.addWidget(l)
 
         layout.addStretch()
         self.setLayout(layout)
@@ -190,30 +250,45 @@ class Menu5(QWidget):
         titulo.setTextFormat(Qt.TextFormat.RichText)
         layout.addWidget(titulo)
 
-        descricao = QLabel("Aqui será exibida a sugestão com base na regressão logística.")
-        descricao.setWordWrap(True)
-        layout.addWidget(descricao)
+        mao_jogador_valores = converter_mao_para_valores(mao_jogador)
+        dealer_val = converter_mao_para_valores(mao_dealer)[0]
+
+        soma_jogador = valor_mao(mao_jogador_valores)
+
+        label_info = QLabel(f"<b>Mão do Jogador:</b> {soma_jogador} | <b>Dealer mostra:</b> {dealer_val}")
+        label_info.setTextFormat(Qt.TextFormat.RichText)
+        layout.addWidget(label_info)
+
+        acao = bot.jogar(dealer_val, soma_jogador, regressao=True)
+
+        label_acao = QLabel(f"Ação recomendada: <b>{acao}</b>")
+        label_acao.setTextFormat(Qt.TextFormat.RichText)
+        layout.addWidget(label_acao)
+
+        probabilidades = bot.jogar(dealer_val, soma_jogador, regressao=True, proba=True)
+
+        for p in probabilidades:
+            t = ''
+            
+            match p:
+                case 'H':
+                    t += 'HIT'
+
+                case 'D':
+                    t += 'DOUBLE'
+                    
+                case 'P':
+                    t += 'SPLIT'
+                    
+                case 'S':
+                    t += 'STAND'
+
+            l = QLabel(f"<br><b>Ação</b>: {t}<b><br> {float(probabilidades[p]):.02f} %")
+            l.setTextFormat(Qt.TextFormat.RichText)
+            layout.addWidget(l)
 
         layout.addStretch()
         self.setLayout(layout)
-
-
-class Menu6(QWidget):
-    def __init__(self, mao_jogador, mao_dealer):
-        super().__init__()
-        layout = QVBoxLayout()
-
-        titulo = QLabel("<h2>Regressão Logística com Contagem de Cartas</h2>")
-        titulo.setTextFormat(Qt.TextFormat.RichText)
-        layout.addWidget(titulo)
-
-        descricao = QLabel("Aqui será exibida a sugestão da regressão logística considerando o true count.")
-        descricao.setWordWrap(True)
-        layout.addWidget(descricao)
-
-        layout.addStretch()
-        self.setLayout(layout)
-
 
 class MainWindow(QMainWindow):
     def __init__(self, maos_jogador, mao_dealer, indice_mao_ativa=0):
@@ -236,9 +311,8 @@ class MainWindow(QMainWindow):
         btn_menu3 = QPushButton("Tabela Internet")
         btn_menu4 = QPushButton("Árvore")
         btn_menu5 = QPushButton("Regressão Logística")
-        btn_menu6 = QPushButton("Regressão Logística com CC")
 
-        for btn in [btn_inicial, btn_menu1, btn_menu2, btn_menu3, btn_menu4, btn_menu5, btn_menu6]:
+        for btn in [btn_inicial, btn_menu1, btn_menu2, btn_menu3, btn_menu4, btn_menu5]:
             botao_layout.addWidget(btn)
 
         self.stack = QStackedWidget()
@@ -249,7 +323,6 @@ class MainWindow(QMainWindow):
         self.tela_menu3 = Menu3(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
         self.tela_menu4 = Menu4(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
         self.tela_menu5 = Menu5(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
-        self.tela_menu6 = Menu6(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
 
         self.stack.addWidget(self.tela_inicial)  # índice 0
         self.stack.addWidget(self.tela_menu1)    # índice 1
@@ -257,7 +330,6 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.tela_menu3)    # índice 3
         self.stack.addWidget(self.tela_menu4)    # índice 4
         self.stack.addWidget(self.tela_menu5)    # índice 5
-        self.stack.addWidget(self.tela_menu6)    # índice 6
 
         main_layout.addLayout(botao_layout)
         main_layout.addWidget(self.stack)
@@ -268,7 +340,6 @@ class MainWindow(QMainWindow):
         btn_menu3.clicked.connect(lambda: self.stack.setCurrentIndex(3))
         btn_menu4.clicked.connect(lambda: self.stack.setCurrentIndex(4))
         btn_menu5.clicked.connect(lambda: self.stack.setCurrentIndex(5))
-        btn_menu6.clicked.connect(lambda: self.stack.setCurrentIndex(6))
 
     def atualizar_maos(self, maos_jogador, mao_dealer, indice_mao_ativa):
         self.maos_jogador = maos_jogador
@@ -286,7 +357,6 @@ class MainWindow(QMainWindow):
         self.tela_menu3 = Menu3(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
         self.tela_menu4 = Menu4(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
         self.tela_menu5 = Menu5(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
-        self.tela_menu6 = Menu6(self.maos_jogador[self.indice_mao_ativa], self.mao_dealer)
 
         self.stack.addWidget(self.tela_inicial)  # índice 0
         self.stack.addWidget(self.tela_menu1)    # índice 1
